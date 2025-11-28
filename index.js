@@ -91,6 +91,15 @@ async function run() {
       };
       const result = await foodCollection.updateOne(query, UpdateFood);
       res.send(result);
+    });
+    
+    // Deteel Food APi
+
+    app.delete("/delete-food", async (req , res)=>{
+      const {id} = req.query;
+      const query = {_id: new ObjectId(id)};
+      const result = await foodCollection.deleteOne(query);
+      res.send(result);
     })
 
     await client.db("admin").command({ ping: 1 });
