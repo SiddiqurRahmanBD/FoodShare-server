@@ -29,7 +29,7 @@ async function run() {
     //Database
     const db = client.db("food-db");
     const foodCollection = db.collection("foods");
-
+    const requestCollection = db.collection("requests");
     //To show Home Page
     app.get("/foods-home", async (req, res) => {
       const result = await foodCollection
@@ -80,27 +80,81 @@ async function run() {
       res.send(result);
     });
 
+    // request collection
+
+    app.post("/request-food", async (req, res) => {
+      const request = req.body;
+      const result = await requestCollection.insertOne(request);
+      res.send(result);
+    });
+
+    app.get("/food-requests/:id", async (req, res) => {
+      const foodId = req.params.id;
+      const result = await requestCollection.find({ foodId }).toArray();
+      res.send(result);
+    });
+
+    app.patch("/accept-request/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const foodId = req.body.foodId; // ID of the food to update
+
+        // Update request status
+        const requestQuery = { _id: new ObjectId(id) };
+        const requestUpdate = { $set: { status: "accepted" } };
+        const updatedRequest = await requestCollection.updateOne(
+          requestQuery,
+          requestUpdate
+        );
+
+        //  Update food status → donated
+        const foodQuery = { _id: new ObjectId(foodId) };
+        const foodUpdate = { $set: { status: "donated" } };
+        const updatedFood = await foodCollection.updateOne(
+          foodQuery,
+          foodUpdate
+        );
+
+        res.send(updatedRequest, updatedFood);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ error: "Failed to accept request" });
+      }
+    });
+
+    app.patch("/reject-request/:id", async (req, res) => {
+      const id = req.params.id;
+      const rejectQuery = { _id: new ObjectId(id) };
+      const rejectUpdate = { $set: { status: "rejected" } };
+      const result = await requestCollection.updateOne(
+        rejectQuery,
+        rejectUpdate
+      );
+
+      res.send(result);
+    });
+
     //Update Food API
 
-    app.put("/update-food/:id", async(req, res) =>{
+    app.put("/update-food/:id", async (req, res) => {
       const id = req.params.id;
       const data = req.body;
-      const query = {_id: new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const UpdateFood = {
-        $set: data
+        $set: data,
       };
       const result = await foodCollection.updateOne(query, UpdateFood);
       res.send(result);
     });
-    
+
     // Deteel Food APi
 
-    app.delete("/delete-food", async (req , res)=>{
-      const {id} = req.query;
-      const query = {_id: new ObjectId(id)};
+    app.delete("/delete-food", async (req, res) => {
+      const { id } = req.query;
+      const query = { _id: new ObjectId(id) };
       const result = await foodCollection.deleteOne(query);
       res.send(result);
-    })
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
