@@ -35,7 +35,7 @@ async function run() {
       const result = await foodCollection
         .find({ food_status: "Available" })
         .sort({ quantity: -1 })
-        .limit(6)
+        .limit(8)
         .toArray();
       res.send(result);
     });
